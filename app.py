@@ -13,7 +13,7 @@ df = pd.read_csv("indian_student_placement_data.csv")
 df.columns = df.columns.str.strip()
 df["Placement Date"] = pd.to_datetime(df["Placement Date"], errors="coerce")
 
-st.dataframe(df.head())
+# st.dataframe(df.head())
 
 # -------------------------------------
 # Sidebar Filters
