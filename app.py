@@ -147,13 +147,15 @@ with overview:
         st.plotly_chart(fig, use_container_width=True, key="overview_companies")
 
     st.subheader("💸 Average Salary Trend")
+    time_df=filtered_df.copy()
+    time_df["Year"]=time_df["Placement Date"].dt.year
     avg_salary_year = (
-        filtered_df.groupby("Graduation Year")["Salary (INR)"]
+        time_df.groupby("Year")["Salary (INR)"]
         .mean()
         .reset_index()
-        .sort_values("Graduation Year")
+        .sort_values("Year")
     )
-    fig = px.area(avg_salary_year, x="Graduation Year", y="Salary (INR)",
+    fig = px.area(avg_salary_year, x="Year", y="Salary (INR)",
                   color_discrete_sequence=["#2ca02c"], title="Average Salary Growth Over Years")
     st.plotly_chart(fig, use_container_width=True, key="overview_salary")
 
@@ -204,7 +206,7 @@ with tab2:
     st.subheader("Job Role Distribution")
     job_roles = filtered_df["Job Role"].value_counts().head(10).reset_index()
     job_roles.columns = ["Job Role", "Count"]
-    fig = px.pie(job_roles, names="Job Role", values="Count", title="Top Job Roles")
+    fig = px.pie(job_roles, names="Job Role", values="Count")
     st.plotly_chart(fig, use_container_width=True, key="company_roles")
 
 # ---------------------------
