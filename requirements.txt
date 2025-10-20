@@ -1,10 +1,5 @@
-# Core dashboard framework
-streamlit==1.38.0
 
-# Data handling
-pandas==2.2.2
-
-# Visualization libraries
+streamlit
+pandas
 plotly.express
-
-numpy==1.26.4
+numpy
