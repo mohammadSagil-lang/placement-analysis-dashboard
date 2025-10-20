@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
+import plotly.express as p
 
 # -------------------------------------
 # Page Setup
@@ -267,66 +266,127 @@ with tab6:
 # 💼 JOB ROLES ANALYSIS
 # ======================================================
 
+# ---------------------------
+# JOB ROLES ANALYSIS
+# ---------------------------
 with tab7:
-    st.header("🧑‍💼 Job Roles Analysis")
+    st.header("💼 Job Roles Analysis")
 
     # --- Top Job Roles ---
-    st.subheader("Job Roles by Number of Placements")
-    job_counts = filtered_df["Job Role"].value_counts().head(10).reset_index()
-    job_counts.columns = ["Job Role", "Placements"]
-    fig = px.bar(
-        job_counts,
+    st.subheader("Top 10 Job Roles by Number of Placements")
+    role_counts = filtered_df["Job Role"].value_counts().head(10).reset_index()
+    role_counts.columns = ["Job Role", "Placements"]
+    fig_roles = px.bar(
+        role_counts,
         x="Placements",
         y="Job Role",
-        color="Job Role",
         orientation="h",
-        title="Top Job Roles",
+        color="Job Role",
+        title="Top 10 Job Roles",
     )
-    st.plotly_chart(fig, use_container_width=True, key="roles_top")
+    st.plotly_chart(fig_roles, use_container_width=True, key="roles_bar")
 
     # --- Average Salary by Job Role ---
     st.subheader("Average Salary by Job Role")
-    avg_salary_role = (
-        filtered_df.groupby("Job Role")["Salary (INR)"]
-        .mean()
-        .sort_values(ascending=False)
-        .head(10)
-        .reset_index()
-    )
-    fig = px.bar(
-        avg_salary_role,
+    avg_salary_role = filtered_df.groupby("Job Role")["Salary (INR)"].mean().reset_index()
+    avg_salary_role = avg_salary_role.sort_values("Salary (INR)", ascending=False)
+    fig_salary_role = px.bar(
+        avg_salary_role.head(10),
         x="Salary (INR)",
         y="Job Role",
-        color="Job Role",
         orientation="h",
-        title="Average Salary by Job Role",
+        color="Job Role",
+        title="Top 10 Highest Paying Job Roles",
     )
-    st.plotly_chart(fig, use_container_width=True, key="roles_salary")
+    st.plotly_chart(fig_salary_role, use_container_width=True, key="roles_salary")
 
-    # --- Job Role Distribution by Branch ---
-    st.subheader("Job Role Distribution by Branch")
-    fig = px.treemap(
-        filtered_df,
-        path=["Branch", "Job Role"],
-        title="Branch-wise Job Role Distribution",
-    )
-    st.plotly_chart(fig, use_container_width=True, key="roles_treemap")
+    # --- Heatmap: Job Role vs Company ---
+    st.subheader("Job Role vs Company - Placement Density")
 
-    # --- AI Insights & Highlights ---
-    st.markdown("### 🤖 AI Insights & Highlights")
     if not filtered_df.empty:
-        top_role = job_counts.iloc[0]["Job Role"]
-        top_role_count = job_counts.iloc[0]["Placements"]
-        high_salary_role = avg_salary_role.iloc[0]["Job Role"]
-        high_salary_value = avg_salary_role.iloc[0]["Salary (INR)"]
+        heatmap_df = (
+            filtered_df.groupby(["Job Role", "Company"])
+            .size()
+            .reset_index(name="Placements")
+        )
+
+        # Pivot for heatmap
+        heatmap_pivot = heatmap_df.pivot(
+            index="Job Role", columns="Company", values="Placements"
+        ).fillna(0)
+
+        # Convert pivot to long format
+        heatmap_long = heatmap_pivot.reset_index().melt(
+            id_vars="Job Role", var_name="Company", value_name="Placements"
+        )
+
+        # Create heatmap
+        fig_heatmap = px.density_heatmap(
+            heatmap_long,
+            x="Company",
+            y="Job Role",
+            z="Placements",
+            color_continuous_scale="Blues",
+            title="Number of Placements by Job Role and Company",
+        )
+
+        # Fix hover text and colorbar title
+        fig_heatmap.update_traces(
+            hovertemplate="<b>Company:</b> %{x}<br>"
+                          "<b>Job Role:</b> %{y}<br>"
+                          "<b>Number of Placements:</b> %{z}<extra></extra>"
+        )
+        fig_heatmap.update_coloraxes(colorbar_title="Number of Placements")
+
+        st.plotly_chart(fig_heatmap, use_container_width=True, key="roles_heatmap")
+
+        # --- AI Insights ---
+        st.markdown("### 🤖 AI Insights on Role-Company Distribution")
+
+        top_pair = heatmap_df.loc[heatmap_df["Placements"].idxmax()]
+        top_role = top_pair["Job Role"]
+        top_company = top_pair["Company"]
+        top_value = int(top_pair["Placements"])
 
         st.info(
             f"""
-            - The most common job role is **{top_role}**, with **{top_role_count} placements**.
-            - The highest average salary is for **{high_salary_role}**, around **₹{high_salary_value:,.0f}**.
-            - Branches like **{filtered_df['Branch'].mode()[0]}** show the most job diversity.
-            - Consider aligning training programs with top-paying and high-demand roles for better outcomes.
+            - **{top_company}** hires the most for the **{top_role}** role with **{top_value} placements**.
+            - The heatmap reveals clusters where specific companies specialize in certain roles.
+            - Institutions can align training programs with these demand trends to maximize placement success.
             """
         )
     else:
-        st.warning("No data available for Job Role insights.")
+        st.warning("No data available to generate heatmap for Job Role vs Company.")
+
+    # --- Treemap for Role Distribution ---
+    st.subheader("Role Distribution by Branch and Company")
+    if "Branch" in filtered_df.columns:
+        treemap_df = (
+            filtered_df.groupby(["Branch", "Company", "Job Role"])
+            .size()
+            .reset_index(name="Placements")
+        )
+        fig_treemap = px.treemap(
+            treemap_df,
+            path=["Branch", "Company", "Job Role"],
+            values="Placements",
+            color="Placements",
+            color_continuous_scale="Greens",
+            title="Job Role Composition by Branch and Company",
+        )
+        st.plotly_chart(fig_treemap, use_container_width=True, key="roles_treemap")
+
+    # --- AI Insights for Roles ---
+    st.markdown("### 🧠 AI Insights Summary for Job Roles")
+    if not filtered_df.empty:
+        top_role_name = role_counts.iloc[0]["Job Role"]
+        avg_salary_top_role = avg_salary_role[avg_salary_role["Job Role"] == top_role_name]["Salary (INR)"].values[0]
+        st.success(
+            f"""
+            - The **most popular job role** is **{top_role_name}**, showing high demand across recruiters.  
+            - The **average salary** for this role is **₹{avg_salary_top_role:,.0f}**.  
+            - There’s a clear link between top recruiters and this job category, as seen in the heatmap.  
+            """
+        )
+    else:
+        st.warning("No data available for AI insights.")
