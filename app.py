@@ -213,6 +213,33 @@ with tab2:
 # SALARY ANALYSIS
 # ---------------------------
 with tab3:
+    # Find highest salary and count of placements per company-role pair
+    st.subheader("Top Company-Role Salary Insights")
+    company_role_stats = (
+        filtered_df.groupby(["Company", "Job Role"])
+        .agg(
+            Highest_Salary=("Salary (INR)", "max"),
+            Placement_Count=("Salary (INR)", "count")
+        )
+        .reset_index()
+    )
+
+    # Sort by highest salary to show top-paying roles first
+    company_role_stats = company_role_stats.sort_values(by="Highest_Salary", ascending=False)
+
+    # Create interactive bar chart
+    fig = px.bar(
+        company_role_stats,
+        x="Company",
+        y="Highest_Salary",
+        color="Job Role",
+        hover_data=["Placement_Count"],
+        title="Highest Salary by Company and Job Role",
+        barmode="group"
+    )
+
+    st.plotly_chart(fig, use_container_width=True, key="company_role_salary")
+
     st.subheader("Salary Distribution (Histogram)")
     fig = px.histogram(filtered_df, x="Salary (INR)", nbins=20, color="Branch", marginal="box",
                        title="Salary Distribution by Branch")
@@ -223,6 +250,8 @@ with tab3:
     fig = px.bar(avg_salary_branch, x="Salary (INR)", y="Branch", color="Branch",
                  orientation="h", title="Average Salary by Branch")
     st.plotly_chart(fig, use_container_width=True, key="salary_avg")
+
+
 
 # ---------------------------
 # LOCATION INSIGHTS
